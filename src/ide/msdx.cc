@@ -1,6 +1,6 @@
 #include "msdx.hh"
-#include "IDEDevice.hh"
 #include "serialize.hh"
+#include "FileContext.hh"
 
 #include <string>
 #include <iostream>
@@ -114,12 +114,13 @@ void msdx::writeIO(word port, byte value, EmuTime::param time)
 					strcpy((char*)ioBuffer, "DEFAULT.DSK");
 				}
 
-				std::string p = "/users/charlie/Desktop/";
-				p.append((const char*)ioBuffer);
-				userFile = fopen(p.c_str(), "rb");
+				auto scontext = systemFileContext();
+				string p = scontext.resolve((const char*)ioBuffer);
 
+				userFile = fopen(p.c_str(), "rb");
 				if (userFile == NULL) {
-					userFile = fopen("DEFAULT.DSK", "rb");
+					p = scontext.resolve("DEFAULT.DSK");
+					userFile = fopen(p.c_str(), "rb");
 				}
 
 				std::string openedOK;
