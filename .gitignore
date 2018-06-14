@@ -10,3 +10,4 @@ core.*
 core
 .cproject
 .project
+.DS*
