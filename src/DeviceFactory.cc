@@ -78,6 +78,7 @@
 #include "MSXException.hh"
 #include "memory.hh"
 #include "components.hh"
+#include "msdx.hh"
 
 #if COMPONENT_LASERDISC
 #include "PioneerLDControl.hh"
@@ -209,6 +210,8 @@ unique_ptr<MSXDevice> DeviceFactory::create(const DeviceConfig& conf)
 		result = make_unique<SVIFDC>(conf);
 	} else if (type == "BeerIDE") {
 		result = make_unique<BeerIDE>(conf);
+	} else if (type == "msdx") {
+		result = make_unique<msdx>(conf);
 	} else if (type == "SunriseIDE") {
 		result = make_unique<SunriseIDE>(conf);
 	} else if (type == "GoudaSCSI") {

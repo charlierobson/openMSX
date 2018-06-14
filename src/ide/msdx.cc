@@ -1,5 +1,4 @@
 #include "msdx.hh"
-#include "IDEDeviceFactory.hh"
 #include "IDEDevice.hh"
 #include "serialize.hh"
 
