@@ -27,6 +27,7 @@ void msdx::reset(EmuTime::param time __attribute__((unused)))
 	imgs[1] = NULL;
 	changed[0] = FALSE;
 	changed[1] = FALSE;
+	std::cerr << "MSDX RESET" << std::endl;
 }
 
 byte msdx::readMem(word address, EmuTime::param /*time*/)
@@ -95,6 +96,12 @@ void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unu
 		int error = 0;
 
 		switch(value) {
+			case 3:
+				strcpy((char*)ioBuffer, "MSDX V0.01 2018 SirMorris");
+				mode = 0;
+				bp = 0;
+				break;
+
 			case 10:
 				std::cerr << "Buffer ptr reset" << std::endl;
 				bp = 0;
