@@ -30,8 +30,12 @@ private:
 	void hexdump(int offset, int count);
 
 	Rom rom;
-	FILE* userFile;
+
+	FILE* imgs[2];
+	bool changed[2];
+	int currentDrive;
 	long logicalSector;
+
 	unsigned char ioBuffer[512];
 	unsigned char lastread;
 	unsigned char iodata;

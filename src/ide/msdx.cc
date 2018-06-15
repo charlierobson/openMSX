@@ -19,11 +19,14 @@ msdx::msdx(const DeviceConfig& config)
 
 msdx::~msdx() = default;
 
-void msdx::reset(EmuTime::param time)
+void msdx::reset(EmuTime::param time __attribute__((unused)))
 {
 	mode = 1;
 	status = 0;
-	userFile = NULL;
+	imgs[0] = NULL;
+	imgs[1] = NULL;
+	changed[0] = FALSE;
+	changed[1] = FALSE;
 }
 
 byte msdx::readMem(word address, EmuTime::param /*time*/)
@@ -42,7 +45,7 @@ const byte* msdx::getReadCacheLine(word start) const
 	return unmappedRead;
 }
 
-byte msdx::readIO(word port, EmuTime::param time)
+byte msdx::readIO(word port, EmuTime::param time __attribute__((unused)))
 {
 	port &= 0x03;
 
@@ -64,7 +67,7 @@ byte msdx::readIO(word port, EmuTime::param time)
 	return 0xff;
 }
 
-byte msdx::peekIO(word port, EmuTime::param time) const
+byte msdx::peekIO(word port, EmuTime::param time __attribute__((unused))) const
 {
 	port &= 0x03;
 
@@ -82,7 +85,7 @@ void msdx::hexdump(int offset, int count) {
 	if ((count & 15) != 0) fprintf(stderr, "\r\n");
 }
 
-void msdx::writeIO(word port, byte value, EmuTime::param time)
+void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unused)))
 {
 	port &= 0x03;
 	mode = 1;
@@ -105,54 +108,87 @@ void msdx::writeIO(word port, byte value, EmuTime::param time)
 
 			case 50:
 			{
-				if (userFile != NULL) {
-					std::cerr << "Closing disk image file" << std::endl;
-					fclose(userFile);
+				int drive = 0;
+				changed[drive] = 1;
+
+				if (imgs[drive]) {
+					fclose(imgs[drive]);
+					imgs[drive] = NULL;
 				}
 
 				if (ioBuffer[0] == 0) {
 					strcpy((char*)ioBuffer, "DEFAULT.DSK");
 				}
 
-				auto scontext = systemFileContext();
-				string p = scontext.resolve((const char*)ioBuffer);
+				//auto paths = userDataFileContext("msdx-sdcard").getPaths();
+				//for(std::vector<string>::iterator it = paths.begin(); it != paths.end(); ++it) {
+				//	std::cerr << *it << std::endl;
+				//}
 
-				userFile = fopen(p.c_str(), "rb");
-				if (userFile == NULL) {
-					p = scontext.resolve("DEFAULT.DSK");
-					userFile = fopen(p.c_str(), "rb");
+				string fn((char*)ioBuffer);
+
+				try {
+					imgs[drive] = fopen(userDataFileContext("msdx-sdcard").resolve(fn).c_str(), "rb");
+				}
+				catch(...) {
 				}
 
-				std::string openedOK;
-				openedOK = userFile == NULL ? "No" : "Yes";
-				std::cerr << "userFile: '" << p << "', opened ok: " << openedOK << std::endl;
+				if (!imgs[drive]) {
+					fn += ".dsk";
+					try {
+						imgs[drive] = fopen(userDataFileContext("msdx-sdcard").resolve(fn).c_str(), "rb");
+					}
+					catch (...) {
+						imgs[drive] = NULL;
+					}
+				}
+
+				std::string openedOK = !imgs[drive] ? "No" : "Yes";
+				std::cerr << "drive: " << drive << " image file: '" << fn << "', opened ok: " << openedOK << std::endl;
+				error = imgs[drive] ? 0 : 0x86;
 			}
 			break;
 
 			case 51:
+				currentDrive = int(ioBuffer[1]);
 				logicalSector = ioBuffer[2] + 256 * ioBuffer[3];
-				std::cerr << "set logsect: " << logicalSector << std::endl;
-				if (userFile) fseek(userFile, logicalSector * 512, SEEK_SET);
+				std::cerr << "drive: " << currentDrive << " logical sector: " << logicalSector << std::endl;
+
+				if (imgs[currentDrive]) {
+					fseek(imgs[currentDrive], logicalSector * 512, SEEK_SET);
+				}
+				else {
+					error = 0x86;
+				}
 				break;
 
 			case 52:
-				//fprintf(stderr, "read sector: %d\r\n", logicalSector);
-				if (userFile != NULL) {
-					fread(ioBuffer,512,1,userFile);
+				if (!imgs[currentDrive]) {
+					error = 0x86;
+				} else {
+					fread(ioBuffer, 512, 1, imgs[currentDrive]);
 					++logicalSector;
 					mode = 0;
 					bp = 0;
 				}
-				error = (userFile == NULL) ? 6 : 0;
 				break;
 
 			case 53:
-				//fprintf(stderr, "write sector: %d\r\n", logicalSector);
-				if (userFile != NULL) {
-					fwrite(ioBuffer,512,1,userFile);
+				if (imgs[currentDrive]) {
+					fwrite(ioBuffer, 512, 1, imgs[currentDrive]);
 					++logicalSector;
+				} else {
+					error = 0x086;
 				}
-				error = (userFile == NULL) ? 6 : 0;
+				break;
+
+			case 129:
+				int drive = int(ioBuffer[1]);
+				ioBuffer[0] = 0; // unknown
+
+				if (imgs[currentDrive]) {
+					ioBuffer[0] = changed[drive] ? 0xff : 0x01;
+				}
 				break;
 		}
 		iodata = error;
