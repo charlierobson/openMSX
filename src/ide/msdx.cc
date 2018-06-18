@@ -97,6 +97,7 @@ void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unu
 
 		switch(value) {
 			case 3:
+				std::cerr << "MSDX V0.01 2018 SirMorris" << std::endl;
 				strcpy((char*)ioBuffer, "MSDX V0.01 2018 SirMorris");
 				mode = 0;
 				bp = 0;
@@ -109,19 +110,18 @@ void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unu
 
 			case 11:
 				std::cerr << "Buffer flush" << std::endl;
-				bp = 0;
 				ioBuffer[0] = 0;
+				bp = 0;
 				break;
 
-			case 50:
-			{
-				int drive = 0;
-				changed[drive] = 1;
+			case 50: {
+				// behaviour:
+				// if no name is specified (ioBuffer[0] is 0) then default.dsk is the file to try to open
+				// if the first open attempt does not work then add '.dsk. extension and retry
+				// return error if no image was opened
+				// only when image is open successfully should we overwrite FIL struct and set changed flag
 
-				if (imgs[drive]) {
-					fclose(imgs[drive]);
-					imgs[drive] = NULL;
-				}
+				int drive = 0;
 
 				if (ioBuffer[0] == 0) {
 					strcpy((char*)ioBuffer, "DEFAULT.DSK");
@@ -132,34 +132,45 @@ void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unu
 				//	std::cerr << *it << std::endl;
 				//}
 
+				FILE* newImg;
 				string fn((char*)ioBuffer);
 
 				try {
-					imgs[drive] = fopen(userDataFileContext("msdx-sdcard").resolve(fn).c_str(), "rb");
+					newImg = fopen(userDataFileContext("msdx-sdcard").resolve(fn).c_str(), "rb");
 				}
 				catch(...) {
 				}
 
-				if (!imgs[drive]) {
+				if (!newImg) {
 					fn += ".dsk";
 					try {
-						imgs[drive] = fopen(userDataFileContext("msdx-sdcard").resolve(fn).c_str(), "rb");
+						newImg = fopen(userDataFileContext("msdx-sdcard").resolve(fn).c_str(), "rb");
 					}
 					catch (...) {
-						imgs[drive] = NULL;
 					}
 				}
 
-				std::string openedOK = !imgs[drive] ? "No" : "Yes";
-				std::cerr << "drive: " << drive << " image file: '" << fn << "', opened ok: " << openedOK << std::endl;
-				error = imgs[drive] ? 0 : 0x86;
+				if (newImg) {
+					if (imgs[drive]) {
+						fclose(imgs[drive]);
+					}
+					imgs[drive] = newImg;
+					std::cerr << "drive: " << drive << " image file: '" << fn << "', opened ok." << std::endl;
+					changed[drive] = 1;
+				}
+				else {
+					std::cerr << "failed to open image file: '" << fn << "', drive " << drive << " unchanged." << std::endl;
+				}
+
+				error = newImg ? 0 : 0x86;
 			}
 			break;
 
-			case 51:
+			case 51: {
+				auto nSectors = int(ioBuffer[5]);
 				currentDrive = int(ioBuffer[1]);
 				logicalSector = ioBuffer[2] + 256 * ioBuffer[3];
-				std::cerr << "drive: " << currentDrive << " logical sector: " << logicalSector << std::endl;
+				std::cerr << "drive: " << currentDrive << " logical sector: " << logicalSector << " nSectors: " << nSectors << std::endl;
 
 				if (imgs[currentDrive]) {
 					fseek(imgs[currentDrive], logicalSector * 512, SEEK_SET);
@@ -167,7 +178,8 @@ void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unu
 				else {
 					error = 0x86;
 				}
-				break;
+			}
+			break;
 
 			case 52:
 				if (!imgs[currentDrive]) {
@@ -189,14 +201,17 @@ void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unu
 				}
 				break;
 
-			case 129:
-				int drive = int(ioBuffer[1]);
+			case 129: {
+				int drive = int(ioBuffer[0]);
+				std::cerr << "Drive("<< drive <<") changed?" << changed[drive] << std::endl;
 				ioBuffer[0] = 0; // unknown
 
 				if (imgs[currentDrive]) {
 					ioBuffer[0] = changed[drive] ? 0xff : 0x01;
+					changed[drive] = 0;
 				}
-				break;
+			}
+			break;
 		}
 		iodata = error;
 		status = 0;
