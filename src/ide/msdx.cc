@@ -23,7 +23,18 @@ void msdx::reset(EmuTime::param time __attribute__((unused)))
 {
 	mode = 1;
 	status = 0;
-	imgs[0] = NULL;
+
+	try {
+		memset((void*)ioBuffer, 0, 512);
+		FILE* driveafile = fopen(userDataFileContext("msdx-sdcard/.MSDX").resolve("drive-a.txt").c_str(), "rb");
+		if (driveafile) {
+			fread(ioBuffer, 512, 1, driveafile);
+			imgs[0] = fopen(userDataFileContext("msdx-sdcard/.MSDX").resolve((char*)ioBuffer).c_str(), "rb");
+			fclose(driveafile);
+		}
+	}
+	catch(...) {}
+
 	imgs[1] = NULL;
 	changed[0] = FALSE;
 	changed[1] = FALSE;
@@ -157,6 +168,14 @@ void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unu
 					imgs[drive] = newImg;
 					std::cerr << "drive: " << drive << " image file: '" << fn << "', opened ok." << std::endl;
 					changed[drive] = 1;
+
+					try {
+						FILE* driveafile = fopen(userDataFileContext("msdx-sdcard/.MSDX").resolve("drive-a.txt").c_str(), "wb");
+						if (driveafile) {
+							fwrite(ioBuffer, strlen((char*)ioBuffer) + 1, 1, driveafile);
+							fclose(driveafile);
+						}
+					} catch(...) {}
 				}
 				else {
 					std::cerr << "failed to open image file: '" << fn << "', drive " << drive << " unchanged." << std::endl;
