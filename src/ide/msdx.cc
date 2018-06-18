@@ -23,22 +23,28 @@ void msdx::reset(EmuTime::param time __attribute__((unused)))
 {
 	mode = 1;
 	status = 0;
+	imgs[0]=NULL;
+	imgs[1]=NULL;
+	changed[0] = FALSE;
+	changed[1] = FALSE;
 
 	try {
+		std::cerr << "MSDX RESET - what's in A:? " << std::endl;
 		memset((void*)ioBuffer, 0, 512);
 		FILE* driveafile = fopen(userDataFileContext("msdx-sdcard/.MSDX").resolve("drive-a.txt").c_str(), "rb");
 		if (driveafile) {
 			fread(ioBuffer, 512, 1, driveafile);
-			imgs[0] = fopen(userDataFileContext("msdx-sdcard/.MSDX").resolve((char*)ioBuffer).c_str(), "rb");
+			char* p = (char*)ioBuffer;
+			while(*p > 31) {
+				++p;
+			}
+			*p = 0;
+			std::cerr << "  disk in drive a: '" << (char*)ioBuffer << "'" << std::endl;
 			fclose(driveafile);
+			imgs[0] = fopen(userDataFileContext("msdx-sdcard").resolve((char*)ioBuffer).c_str(), "rb");
 		}
 	}
 	catch(...) {}
-
-	imgs[1] = NULL;
-	changed[0] = FALSE;
-	changed[1] = FALSE;
-	std::cerr << "MSDX RESET" << std::endl;
 }
 
 byte msdx::readMem(word address, EmuTime::param /*time*/)
@@ -115,12 +121,10 @@ void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unu
 				break;
 
 			case 10:
-				std::cerr << "Buffer ptr reset" << std::endl;
 				bp = 0;
 				break;
 
 			case 11:
-				std::cerr << "Buffer flush" << std::endl;
 				ioBuffer[0] = 0;
 				bp = 0;
 				break;
@@ -144,18 +148,17 @@ void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unu
 				//}
 
 				FILE* newImg;
-				string fn((char*)ioBuffer);
 
 				try {
-					newImg = fopen(userDataFileContext("msdx-sdcard").resolve(fn).c_str(), "rb");
+					newImg = fopen(userDataFileContext("msdx-sdcard").resolve((char*)ioBuffer).c_str(), "rb");
 				}
 				catch(...) {
 				}
 
 				if (!newImg) {
-					fn += ".dsk";
+					strcat((char*)ioBuffer, ".dsk");
 					try {
-						newImg = fopen(userDataFileContext("msdx-sdcard").resolve(fn).c_str(), "rb");
+						newImg = fopen(userDataFileContext("msdx-sdcard").resolve((char*)ioBuffer).c_str(), "rb");
 					}
 					catch (...) {
 					}
@@ -166,19 +169,19 @@ void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unu
 						fclose(imgs[drive]);
 					}
 					imgs[drive] = newImg;
-					std::cerr << "drive: " << drive << " image file: '" << fn << "', opened ok." << std::endl;
+					std::cerr << "drive: " << drive << " image file: '" << (char*)ioBuffer << "', opened ok." << std::endl;
 					changed[drive] = 1;
 
 					try {
 						FILE* driveafile = fopen(userDataFileContext("msdx-sdcard/.MSDX").resolve("drive-a.txt").c_str(), "wb");
 						if (driveafile) {
-							fwrite(ioBuffer, strlen((char*)ioBuffer) + 1, 1, driveafile);
+							fwrite(ioBuffer, strlen((char*)ioBuffer), 1, driveafile);
 							fclose(driveafile);
 						}
 					} catch(...) {}
 				}
 				else {
-					std::cerr << "failed to open image file: '" << fn << "', drive " << drive << " unchanged." << std::endl;
+					std::cerr << "failed to open image file: '" << (char*)ioBuffer << "', drive " << drive << " unchanged." << std::endl;
 				}
 
 				error = newImg ? 0 : 0x86;
