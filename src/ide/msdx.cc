@@ -41,11 +41,6 @@ void msdx::reset(EmuTime::param time __attribute__((unused)))
 
 	std::cerr << "sdcard home dir: " << home << std::endl;
 
-	dirBegin();
-	while (dirHandler() == 0 ) {
-		std::cerr << "  " << (char*)ioBuffer << std::endl;
-	}
-
 	try {
 		std::cerr << "MSDX RESET - what's in A:? " << std::endl;
 		memset((void*)ioBuffer, 0, 512);
@@ -145,6 +140,19 @@ void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unu
 			case 11:
 				ioBuffer[0] = 0;
 				bp = 0;
+				break;
+
+			// CMD_DIR_READ_BEGIN
+			case 20:
+				error = dirBegin();
+				break;
+
+			// CMD_DIR_READ_NEXT
+			case 21:
+				error = dirHandler();
+				if (!error) {
+					std::cerr << "  " << (char*)ioBuffer << std::endl;
+				}
 				break;
 
 			case 50: {
