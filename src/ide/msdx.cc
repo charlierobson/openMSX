@@ -127,7 +127,6 @@ void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unu
 
 		switch(value) {
 			case 3:
-				std::cerr << "MSDX V0.01 2018 SirMorris" << std::endl;
 				strcpy((char*)ioBuffer, "MSDX V0.01 2018 SirMorris");
 				mode = 0;
 				bp = 0;
@@ -225,19 +224,19 @@ void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unu
 					fseek(imgs[currentDrive], logicalSector * 512, SEEK_SET);
 				}
 				else {
-					error = 0x86;
+					error = 0x82;
 				}
 			}
 			break;
 
 			case 52:
-				if (!imgs[currentDrive]) {
-					error = 0x86;
-				} else {
+				if (imgs[currentDrive]) {
 					fread(ioBuffer, 512, 1, imgs[currentDrive]);
 					++logicalSector;
 					mode = 0;
 					bp = 0;
+				} else {
+					error = 0x82;
 				}
 				break;
 
@@ -246,18 +245,28 @@ void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unu
 					fwrite(ioBuffer, 512, 1, imgs[currentDrive]);
 					++logicalSector;
 				} else {
-					error = 0x086;
+					error = 0x082;
 				}
 				break;
 
 			case 129: {
 				int drive = int(ioBuffer[0]);
-				std::cerr << "Drive("<< drive <<") changed?" << changed[drive] << std::endl;
+				std::cerr << "drive "<< drive <<" changed?" << changed[drive] << std::endl;
 				ioBuffer[0] = 0; // unknown
 
 				if (imgs[currentDrive]) {
 					ioBuffer[0] = changed[drive] ? 0xff : 0x01;
 					changed[drive] = 0;
+				}
+			}
+			break;
+
+			case 130: {
+				std::cerr << "Ejecting drive 0" << std::endl;
+				if (imgs[0]) {
+					fclose(imgs[0]);
+					imgs[0] = NULL;
+					changed[0] = TRUE;
 				}
 			}
 			break;
