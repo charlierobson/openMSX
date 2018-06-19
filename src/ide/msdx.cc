@@ -44,7 +44,7 @@ void msdx::reset(EmuTime::param time __attribute__((unused)))
 	try {
 		std::cerr << "MSDX RESET - what's in A:? " << std::endl;
 		memset((void*)ioBuffer, 0, 512);
-		FILE* driveafile = fopen(userDataFileContext("msdx-sdcard/.MSDX").resolve("drive-a.txt").c_str(), "rb");
+		FILE* driveafile = fopen(userDataFileContext("msdx-sdcard/MSDX").resolve("drive-a.txt").c_str(), "rb");
 		if (driveafile) {
 			fread(ioBuffer, 512, 1, driveafile);
 			char* p = (char*)ioBuffer;
@@ -199,7 +199,7 @@ void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unu
 					changed[drive] = 1;
 
 					try {
-						FILE* driveafile = fopen(userDataFileContext("msdx-sdcard/.MSDX").resolve("drive-a.txt").c_str(), "wb");
+						FILE* driveafile = fopen(userDataFileContext("msdx-sdcard/MSDX").resolve("drive-a.txt").c_str(), "wb");
 						if (driveafile) {
 							fwrite(ioBuffer, strlen((char*)ioBuffer), 1, driveafile);
 							fclose(driveafile);
