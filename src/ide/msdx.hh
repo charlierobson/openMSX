@@ -4,6 +4,7 @@
 #include "MSXDevice.hh"
 #include "Rom.hh"
 #include <memory>
+#include <dirent.h>
 
 namespace openmsx {
 
@@ -29,12 +30,19 @@ private:
 	void changeControl(byte value, EmuTime::param time);
 	void hexdump(int offset, int count);
 
+	void strupper(char* dest);
+	void strvalidate(char* p);
+	int dirHandler();
+	int dirBegin();
+
 	Rom rom;
 
 	FILE* imgs[2];
 	bool changed[2];
 	int currentDrive;
 	long logicalSector;
+
+	std::string home;
 
 	unsigned char ioBuffer[512];
 	unsigned char lastread;
@@ -46,6 +54,9 @@ private:
 
 	word dataReg;
 	byte controlReg;
+
+	int dirState;
+	DIR* dir;
 };
 
 } // namespace openmsx

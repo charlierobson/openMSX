@@ -5,8 +5,12 @@
 #include <string>
 #include <iostream>
 
-using std::string;
+#include <dirent.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
+using std::string;
 
 namespace openmsx {
 
@@ -27,6 +31,20 @@ void msdx::reset(EmuTime::param time __attribute__((unused)))
 	imgs[1]=NULL;
 	changed[0] = FALSE;
 	changed[1] = FALSE;
+
+	auto paths = userDataFileContext("msdx-sdcard").getPaths();
+	home = paths[1];
+
+//	for(std::vector<string>::iterator it = paths.begin(); it != paths.end(); ++it) {
+//		std::cerr << "'" << *it << "'" << std::endl;
+//	}
+
+	std::cerr << "sdcard home dir: " << home << std::endl;
+
+	dirBegin();
+	while (dirHandler() == 0 ) {
+		std::cerr << "  " << (char*)ioBuffer << std::endl;
+	}
 
 	try {
 		std::cerr << "MSDX RESET - what's in A:? " << std::endl;
@@ -134,7 +152,8 @@ void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unu
 				// if no name is specified (ioBuffer[0] is 0) then default.dsk is the file to try to open
 				// if the first open attempt does not work then add '.dsk. extension and retry
 				// return error if no image was opened
-				// only when image is open successfully should we overwrite FIL struct and set changed flag
+				// only when image is open successfully should we overwrite FIL struct,
+				//  set changed flag and write filename to drive-a.txt
 
 				int drive = 0;
 
@@ -242,6 +261,156 @@ void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unu
 		bp = (bp + 1) & 511;
 	}
 }
+
+
+void msdx::strupper(char* dest)
+{
+	while(*dest)
+	{
+		*dest = toupper(*dest);
+		++dest;
+	}
+}
+
+void msdx::strvalidate(char* p)
+{
+	char* p2 = p;
+	while(*p2)
+	{
+		unsigned char q = *p2 - 32;
+		if (q > 96)
+		{
+			*p2 = '?';
+		}
+		++p2;
+	}
+	strupper(p);
+}
+
+int msdx::dirHandler()
+{
+	int rtn = 0;
+	int switchState;
+
+	do	
+	{
+		switchState = FALSE;
+
+		switch(dirState)
+		{
+		case 0:
+			{
+				// new search
+				dir = opendir(home.c_str());
+				dirState = 1;
+			}
+			break;
+
+		case 1:
+			{
+				// reading directories
+				dirent* dire = readdir(dir);
+
+				if (!dire)
+				{
+					// done dirs
+					switchState = TRUE;
+					dirState = 2;
+					break;
+				}
+				else
+				{
+					if (dire->d_name[0] == '.') {
+						switchState = TRUE;
+						break;
+					}
+
+					struct stat path_stat;
+					std::string fullpath = home;
+					fullpath += "/";
+					fullpath += dire->d_name;
+
+					stat(fullpath.c_str(), &path_stat);
+					if (!S_ISREG(path_stat.st_mode))
+					{
+						ioBuffer[0] = '<';
+						strcpy((char*)ioBuffer+1, dire->d_name);
+						strcat((char*)ioBuffer, ">           ");
+						ioBuffer[12] = 0;
+						strupper((char*)ioBuffer);
+						mode = 0;
+						bp = 0;
+					}
+					else
+					{
+						// go around one more time
+						switchState = TRUE;
+					}
+				}
+			}
+			break;
+
+		case 2:
+			{
+				// new search
+				dir = opendir(home.c_str());
+				switchState = TRUE;
+				dirState = 3;
+			}
+			break;	
+
+		case 3:
+			{
+				// reading files
+				dirent* dire = readdir(dir);
+
+				if (!dire)
+				{
+					// done files
+					return 0x40;
+				}
+				else
+				{
+					if (dire->d_name[0] == '.') {
+						switchState = TRUE;
+						break;
+					}
+
+					struct stat path_stat;
+					std::string fullpath = home;
+					fullpath += "/";
+					fullpath += dire->d_name;
+
+					stat(fullpath.c_str(), &path_stat);
+					if (S_ISREG(path_stat.st_mode))
+					{
+						strcpy((char*)ioBuffer, dire->d_name);
+						strupper((char*)ioBuffer);
+						mode = 0;
+						bp = 0;
+					}
+					else
+					{
+						// go around one more time
+						switchState = TRUE;
+					}
+				}
+			}
+			break;
+		}
+	}
+	while (switchState);
+
+	return rtn;
+}	
+
+int msdx::dirBegin()
+{
+	dirState = 0;
+	return dirHandler();
+}
+
+
 
 
 template<typename Archive>
