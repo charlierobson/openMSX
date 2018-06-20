@@ -44,9 +44,9 @@ void msdx::reset(EmuTime::param time __attribute__((unused)))
 	try {
 		std::cerr << "MSDX RESET - what's in A:? " << std::endl;
 		memset((void*)ioBuffer, 0, 512);
-		FILE* driveafile = fopen(userDataFileContext("msdx-sdcard/MSDX").resolve("drive-a.txt").c_str(), "rb");
+		FILE* driveafile = fopen(userDataFileContext("msdx-sdcard/MSDX").resolve("drive-a.txt").c_str(), "rb+");
 		if (driveafile) {
-			fread(ioBuffer, 512, 1, driveafile);
+			fread(ioBuffer, 1, 512, driveafile);
 			char* p = (char*)ioBuffer;
 			while(*p > 31) {
 				++p;
@@ -54,7 +54,7 @@ void msdx::reset(EmuTime::param time __attribute__((unused)))
 			*p = 0;
 			std::cerr << "  disk in drive a: '" << (char*)ioBuffer << "'" << std::endl;
 			fclose(driveafile);
-			imgs[0] = fopen(userDataFileContext("msdx-sdcard").resolve((char*)ioBuffer).c_str(), "rb");
+			imgs[0] = fopen(userDataFileContext("msdx-sdcard").resolve((char*)ioBuffer).c_str(), "rb+");
 		}
 	}
 	catch(...) {}
@@ -176,7 +176,7 @@ void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unu
 				FILE* newImg;
 
 				try {
-					newImg = fopen(userDataFileContext("msdx-sdcard").resolve((char*)ioBuffer).c_str(), "rb");
+					newImg = fopen(userDataFileContext("msdx-sdcard").resolve((char*)ioBuffer).c_str(), "rb+");
 				}
 				catch(...) {
 				}
@@ -184,7 +184,7 @@ void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unu
 				if (!newImg) {
 					strcat((char*)ioBuffer, ".dsk");
 					try {
-						newImg = fopen(userDataFileContext("msdx-sdcard").resolve((char*)ioBuffer).c_str(), "rb");
+						newImg = fopen(userDataFileContext("msdx-sdcard").resolve((char*)ioBuffer).c_str(), "rb+");
 					}
 					catch (...) {
 					}
@@ -226,12 +226,15 @@ void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unu
 				else {
 					error = 0x82;
 				}
+
+				bp = 0;
 			}
 			break;
 
 			case 52:
 				if (imgs[currentDrive]) {
-					fread(ioBuffer, 512, 1, imgs[currentDrive]);
+					std::cerr << "sector read " << logicalSector << std::endl;
+					fread(ioBuffer, 1, 512, imgs[currentDrive]);
 					++logicalSector;
 					mode = 0;
 					bp = 0;
@@ -242,10 +245,17 @@ void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unu
 
 			case 53:
 				if (imgs[currentDrive]) {
-					fwrite(ioBuffer, 512, 1, imgs[currentDrive]);
-					++logicalSector;
+					size_t written = fwrite(ioBuffer, 1, 512, imgs[currentDrive]);
+					std::cerr << "sector write " << logicalSector << " requested 512, written " << written << std::endl;
+					if (written == 512) {
+						++logicalSector;
+					}
+					else {
+						error = 0x8a; // write fault
+					}
+					bp = 0;
 				} else {
-					error = 0x082;
+					error = 0x082; // no disk
 				}
 				break;
 
