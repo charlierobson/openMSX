@@ -127,7 +127,7 @@ void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unu
 
 		switch(value) {
 			case 3:
-				strcpy((char*)ioBuffer, "MSDX V0.01 2018 SirMorris");
+				strcpy((char*)ioBuffer, "MSDX V0.1  2018 SirMorris");
 				mode = 0;
 				bp = 0;
 				break;
