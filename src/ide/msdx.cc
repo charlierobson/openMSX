@@ -413,6 +413,15 @@ int msdx::dirHandler()
 					{
 						strcpy((char*)ioBuffer, dire->d_name);
 						strupper((char*)ioBuffer);
+						strcat((char*)ioBuffer, "        ");
+						ioBuffer[12] = 0;
+
+						char* pos = strchr((char*)ioBuffer, '.');
+						if (pos != NULL) {
+							memcpy((char*)ioBuffer + 8, pos, 4);
+							memset(pos, ' ', 8 - (pos - (char*)ioBuffer));
+						}
+
 						mode = 0;
 						bp = 0;
 					}
