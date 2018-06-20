@@ -35,12 +35,16 @@ private:
 	int dirHandler();
 	int dirBegin();
 
+	int openFileRead();
+
 	Rom rom;
 
 	FILE* imgs[2];
 	bool changed[2];
 	int currentDrive;
 	long logicalSector;
+
+	FILE* userFile;
 
 	std::string home;
 

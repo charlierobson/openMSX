@@ -31,6 +31,7 @@ void msdx::reset(EmuTime::param time __attribute__((unused)))
 	imgs[1]=NULL;
 	changed[0] = FALSE;
 	changed[1] = FALSE;
+	userFile = NULL;
 
 	auto paths = userDataFileContext("msdx-sdcard").getPaths();
 	home = paths[1];
@@ -154,6 +155,31 @@ void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unu
 				}
 				break;
 
+			// CMD_FILE_OPEN_READ
+			case 30:
+				error = openFileRead();
+				mode = 0;
+				bp = 0;
+				break;
+
+			// CMD_FILE_READ_512
+			case 35: {
+				size_t numRead = fread(ioBuffer, 1, 512, userFile);
+				std::cerr << " CMD_FILE_READ_512 " << numRead << std::endl;
+				if (numRead == 0) {
+					if (feof(userFile)) {
+						std::cerr << " [eof] " << std::endl;
+						error = 0x40;
+					} else {
+						std::cerr << " [eof] " << std::endl;
+						error = 0x84;
+					}
+				}
+				mode = 0;
+				bp = 0;
+			}
+			break;
+			
 			case 50: {
 				// behaviour:
 				// if no name is specified (ioBuffer[0] is 0) then default.dsk is the file to try to open
@@ -165,7 +191,7 @@ void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unu
 				int drive = 0;
 
 				if (ioBuffer[0] == 0) {
-					strcpy((char*)ioBuffer, "DEFAULT.DSK");
+					strcpy((char*)ioBuffer, "DEFAULT.DMG");
 				}
 
 				//auto paths = userDataFileContext("msdx-sdcard").getPaths();
@@ -183,6 +209,16 @@ void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unu
 
 				if (!newImg) {
 					strcat((char*)ioBuffer, ".dsk");
+					try {
+						newImg = fopen(userDataFileContext("msdx-sdcard").resolve((char*)ioBuffer).c_str(), "rb+");
+					}
+					catch (...) {
+					}
+				}
+
+				if (!newImg) {
+					char* p = strchr((char*)ioBuffer, '.');
+					strcpy(p, ".dmg");
 					try {
 						newImg = fopen(userDataFileContext("msdx-sdcard").resolve((char*)ioBuffer).c_str(), "rb+");
 					}
@@ -447,6 +483,45 @@ int msdx::dirBegin()
 }
 
 
+int msdx::openFileRead()
+{
+	if (userFile != NULL) {
+		fclose(userFile);
+		userFile = NULL;
+	}
+
+	try {
+		userFile = fopen(userDataFileContext("msdx-sdcard").resolve((char*)ioBuffer).c_str(), "rb+");
+	}
+	catch(...) {
+	}
+
+	if (!userFile) {
+		strcat((char*)ioBuffer, ".com");
+		try {
+			userFile = fopen(userDataFileContext("msdx-sdcard").resolve((char*)ioBuffer).c_str(), "rb+");
+		}
+		catch (...) {
+		}
+	}
+
+	if (!userFile) {
+		std::cerr << "failed to open user file: '" << (char*)ioBuffer << "'" << std::endl;
+	}
+	else {
+		fseek(userFile, 0, SEEK_END);
+		size_t fsize = ftell(userFile);
+		rewind(userFile);
+
+		std::cerr << "user file " << (char*)ioBuffer << " len = " << fsize << std::endl;
+
+        ioBuffer[0] = (fsize + 511) / 512;
+        ioBuffer[1] = fsize & 255;
+        ioBuffer[2] = fsize / 255;
+	}
+
+	return userFile ? 0 : 0x89;
+}
 
 
 template<typename Archive>
