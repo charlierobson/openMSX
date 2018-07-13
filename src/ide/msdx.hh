@@ -47,6 +47,7 @@ private:
 	FILE* userFile;
 
 	std::string home;
+	std::string mountedFile;
 
 	unsigned char ioBuffer[512];
 	unsigned char lastread;

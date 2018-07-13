@@ -43,7 +43,7 @@ void msdx::reset(EmuTime::param time __attribute__((unused)))
 	std::cerr << "sdcard home dir: " << home << std::endl;
 
 	try {
-		std::cerr << "MSDX RESET - what's in A:? " << std::endl;
+		std::cerr << "MSDX RESET - what's in A:? ";
 		memset((void*)ioBuffer, 0, 512);
 		FILE* driveafile = fopen(userDataFileContext("msdx-sdcard/MSDX").resolve("drive-a.txt").c_str(), "rb+");
 		if (driveafile) {
@@ -53,12 +53,18 @@ void msdx::reset(EmuTime::param time __attribute__((unused)))
 				++p;
 			}
 			*p = 0;
-			std::cerr << "  disk in drive a: '" << (char*)ioBuffer << "'" << std::endl;
+			std::cerr << "'" << (char*)ioBuffer << "'" << std::endl;
+			mountedFile = (const char*)ioBuffer;
+
 			fclose(driveafile);
 			imgs[0] = fopen(userDataFileContext("msdx-sdcard").resolve((char*)ioBuffer).c_str(), "rb+");
+		} else {
+			std::cerr << "(no disk)" << std::endl;
 		}
 	}
-	catch(...) {}
+	catch(...) {
+		std::cerr << "(exception - no disk)" << std::endl;
+	}
 }
 
 byte msdx::readMem(word address, EmuTime::param /*time*/)
@@ -232,6 +238,7 @@ void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unu
 					}
 					imgs[drive] = newImg;
 					std::cerr << "drive: " << drive << " image file: '" << (char*)ioBuffer << "', opened ok." << std::endl;
+					mountedFile = (const char*)ioBuffer;
 					changed[drive] = 1;
 
 					try {
@@ -269,8 +276,8 @@ void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unu
 
 			case 52:
 				if (imgs[currentDrive]) {
-					std::cerr << "sector read " << logicalSector << std::endl;
-					fread(ioBuffer, 1, 512, imgs[currentDrive]);
+					size_t read = fread(ioBuffer, 1, 512, imgs[currentDrive]);
+					std::cerr << "sector read " << logicalSector << " requested 512, read " << read << std::endl;
 					++logicalSector;
 					mode = 0;
 					bp = 0;
@@ -314,6 +321,25 @@ void msdx::writeIO(word port, byte value, EmuTime::param time __attribute__((unu
 					imgs[0] = NULL;
 					changed[0] = TRUE;
 				}
+			}
+			break;
+
+			case 131: {
+				if (mountedFile.length() == 0) {
+					error = 0x40;
+					return;
+				}
+
+				std::string s("Drive A: ");
+				s += mountedFile;
+
+				std::cerr << s << " len: " << s.length() << " meaning " << (37 - s.length()) / 2 << std::endl;
+
+				int n = (37 - s.length()) / 2;
+				memset(ioBuffer, 32, 40);
+				strcpy((char*)(ioBuffer+n), s.c_str());
+				mode = 0;
+				bp = 0;
 			}
 			break;
 		}
