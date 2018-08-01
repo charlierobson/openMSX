@@ -56,7 +56,7 @@ void JoyMega::registerAll(MSXEventDistributor& eventDistributor,
 class JoyMegaState final : public StateChange
 {
 public:
-	JoyMegaState() {} // for serialize
+	JoyMegaState() = default; // for serialize
 	JoyMegaState(EmuTime::param time_, unsigned joyNum_,
 	             unsigned press_, unsigned release_)
 		: StateChange(time_)
@@ -115,7 +115,7 @@ const string& JoyMega::getName() const
 	return name;
 }
 
-string_ref JoyMega::getDescription() const
+string_view JoyMega::getDescription() const
 {
 	return desc;
 }

@@ -272,10 +272,10 @@ void ImagePrinter::flushEmulatedPrinter()
 			try {
 				string filename = paper->save();
 				motherBoard.getMSXCliComm().printInfo(
-					"Printed to " + filename);
+					"Printed to ", filename);
 			} catch (MSXException& e) {
 				motherBoard.getMSXCliComm().printWarning(
-					"Failed to print: " + e.getMessage());
+					"Failed to print: ", e.getMessage());
 			}
 			printAreaTop = -1.0;
 			printAreaBottom = 0.0;
@@ -631,7 +631,7 @@ const string& ImagePrinterMSX::getName() const
 	return name;
 }
 
-string_ref ImagePrinterMSX::getDescription() const
+string_view ImagePrinterMSX::getDescription() const
 {
 	// TODO which printer type
 	return "Emulate MSX printer, prints to image.";
@@ -1211,7 +1211,7 @@ const string& ImagePrinterEpson::getName() const
 	return name;
 }
 
-string_ref ImagePrinterEpson::getDescription() const
+string_view ImagePrinterEpson::getDescription() const
 {
 	return "Emulate Epson FX80 printer, prints to image.";
 }

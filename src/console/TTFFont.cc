@@ -32,7 +32,7 @@ public:
 	void release(TTF_Font* font);
 
 private:
-	TTFFontPool();
+	TTFFontPool() = default;
 	~TTFFontPool();
 
 	// We want to keep the LocalFileReference object alive for as long as
@@ -65,8 +65,7 @@ private:
 SDLTTF::SDLTTF()
 {
 	if (TTF_Init() < 0) {
-		throw FatalError(StringOp::Builder() <<
-			"Couldn't initialize SDL_ttf: " << TTF_GetError());
+		throw FatalError("Couldn't initialize SDL_ttf: ", TTF_GetError());
 	}
 }
 
@@ -83,10 +82,6 @@ SDLTTF& SDLTTF::instance()
 
 
 // class TTFFontPool
-
-TTFFontPool::TTFFontPool()
-{
-}
 
 TTFFontPool::~TTFFontPool()
 {

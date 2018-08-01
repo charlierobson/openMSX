@@ -61,7 +61,7 @@ static inline YMF262::FreqIndex fnumToIncrement(unsigned block_fnum)
 // envelope output entries
 static constexpr int ENV_BITS    = 10;
 static constexpr int ENV_LEN     = 1 << ENV_BITS;
-static constexpr float ENV_STEP = 128.0 / ENV_LEN;
+static constexpr double ENV_STEP = 128.0 / ENV_LEN;
 
 static constexpr int MAX_ATT_INDEX = (1 << (ENV_BITS - 1)) - 1; // 511
 static constexpr int MIN_ATT_INDEX = 0;
@@ -138,7 +138,7 @@ static constexpr unsigned ksl_tab[8 * 16] = {
 
 // sustain level table (3dB per step)
 // 0 - 15: 0, 3, 6, 9,12,15,18,21,24,27,30,33,36,39,42,93 (dB)
-#define SC(db) unsigned((db) * (2.0f / ENV_STEP))
+#define SC(db) unsigned((db) * (2.0 / ENV_STEP))
 static constexpr unsigned sl_tab[16] = {
 	SC( 0), SC( 1), SC( 2), SC(3 ), SC(4 ), SC(5 ), SC(6 ), SC( 7),
 	SC( 8), SC( 9), SC(10), SC(11), SC(12), SC(13), SC(14), SC(31)
@@ -378,7 +378,7 @@ static CONSTEXPR TlTab getTlTab()
 	TlTab t = {};
 	// this _is_ different from OPL2 (verified on real YMF262)
 	for (int x = 0; x < TL_RES_LEN; x++) {
-		double m = (1 << 16) / cstd::exp2<6>((x + 1) * (ENV_STEP / 4.0f) / 8.0f);
+		double m = (1 << 16) / cstd::exp2<6>((x + 1) * (ENV_STEP / 4.0) / 8.0);
 
 		// we never reach (1<<16) here due to the (x+1)
 		// result fits within 16 bits at maximum
@@ -1452,6 +1452,8 @@ void YMF262::reset(EmuTime::param time)
 			sl.volume = MAX_ATT_INDEX;
 		}
 	}
+
+	setMixLevel(0x1b, time); // -9dB left and right
 }
 
 YMF262::YMF262(const std::string& name_,
@@ -1490,10 +1492,10 @@ YMF262::YMF262(const std::string& name_,
 	float input = isYMF278
 	            ?    33868800.0f / (19 * 36)
 	            : 4 * 3579545.0f / ( 8 * 36);
-	setInputRate(int(input + 0.5f));
+	setInputRate(lrintf(input));
 
-	reset(config.getMotherBoard().getCurrentTime());
 	registerSound(config);
+	reset(config.getMotherBoard().getCurrentTime()); // must come after registerSound() because of call to setSoftwareVolume() via setMixLevel()
 }
 
 YMF262::~YMF262()
@@ -1529,9 +1531,27 @@ bool YMF262::checkMuteHelper()
 	return true;
 }
 
+void YMF262::setMixLevel(uint8_t x, EmuTime::param time)
+{
+	// Only present on YMF278
+	// see mix_level[] and vol_factor() in YMF278.cc
+	using T = SoundDevice::VolumeType;
+	static const T level[8] = {
+		T(1.00 / 1), //   0dB
+		T(0.75 / 1), //  -3dB (approx)
+		T(1.00 / 2), //  -6dB
+		T(0.75 / 2), //  -9dB (approx)
+		T(1.00 / 4), // -12dB
+		T(0.75 / 4), // -15dB (approx)
+		T(1.00 / 8), // -18dB
+		T(0.0     ), // -inf dB
+	};
+	setSoftwareVolume(level[x & 7], level[(x >> 3) & 7], time);
+}
+
 int YMF262::getAmplificationFactorImpl() const
 {
-	return 1 << 2;
+	return 1 << 3;
 }
 
 void YMF262::generateChannels(int** bufs, unsigned num)

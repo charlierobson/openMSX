@@ -28,13 +28,13 @@ static void allocateMixBuffer(unsigned size)
 	}
 }
 
-static string makeUnique(MSXMixer& mixer, string_ref name)
+static string makeUnique(MSXMixer& mixer, string_view name)
 {
 	string result = name.str();
 	if (mixer.findDevice(result)) {
 		unsigned n = 0;
 		do {
-			result = StringOp::Builder() << name << " (" << ++n << ')';
+			result = strCat(name, " (", ++n, ')');
 		} while (mixer.findDevice(result));
 	}
 	return result;
@@ -89,8 +89,8 @@ void SoundDevice::addFill(int*& buf, int val, unsigned num)
 	} while (--num);
 }
 
-SoundDevice::SoundDevice(MSXMixer& mixer_, string_ref name_,
-			 string_ref description_,
+SoundDevice::SoundDevice(MSXMixer& mixer_, string_view name_,
+			 string_view description_,
 			 unsigned numChannels_, bool stereo_)
 	: mixer(mixer_)
 	, name(makeUnique(mixer, name_))
@@ -127,7 +127,7 @@ void SoundDevice::registerSound(const DeviceConfig& config)
 	const XMLElement& soundConfig = config.getChild("sound");
 	float volume = soundConfig.getChildDataAsInt("volume") / 32767.0f;
 	int devBalance = 0;
-	string_ref mode = soundConfig.getChildData("mode", "mono");
+	string_view mode = soundConfig.getChildData("mode", "mono");
 	if (mode == "mono") {
 		devBalance = 0;
 	} else if (mode == "left") {
@@ -135,7 +135,7 @@ void SoundDevice::registerSound(const DeviceConfig& config)
 	} else if (mode == "right") {
 		devBalance = 100;
 	} else {
-		throw MSXException("balance \"" + mode + "\" illegal");
+		throw MSXException("balance \"", mode, "\" illegal");
 	}
 
 	for (auto& b : soundConfig.getChildren("balance")) {
@@ -148,8 +148,7 @@ void SoundDevice::registerSound(const DeviceConfig& config)
 
 		// TODO Support other balances
 		if (balance != 0 && balance != -100 && balance != 100) {
-			throw MSXException(StringOp::Builder() <<
-			                   "balance " << balance << " illegal");
+			throw MSXException("balance ", balance, " illegal");
 		}
 		if (balance != 0) {
 			balanceCenter = false;
@@ -176,8 +175,14 @@ void SoundDevice::updateStream(EmuTime::param time)
 
 void SoundDevice::setSoftwareVolume(VolumeType volume, EmuTime::param time)
 {
+	setSoftwareVolume(volume, volume, time);
+}
+
+void SoundDevice::setSoftwareVolume(VolumeType left, VolumeType right, EmuTime::param time)
+{
 	updateStream(time);
-	softwareVolume = volume;
+	softwareVolumeLeft  = left;
+	softwareVolumeRight = right;
 	mixer.updateSoftwareVolume(*this);
 }
 
@@ -279,8 +284,11 @@ bool SoundDevice::mixChannels(int* dataOut, unsigned samples)
 		if (writer[i]) {
 			assert(bufs[i] != dataOut);
 			if (bufs[i]) {
+				auto amp = getAmplificationFactor();
 				writer[i]->write(
-					bufs[i], stereo, samples, getAmplificationFactor().toInt());
+					bufs[i], stereo, samples,
+					amp.first.toFloat(),
+					amp.second.toFloat());
 			} else {
 				writer[i]->writeSilence(stereo, samples);
 			}

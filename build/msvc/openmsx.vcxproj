@@ -30,6 +30,7 @@
     <ProjectGuid>{9563D96E-BBDC-410C-8BED-189102B0866F}</ProjectGuid>
     <RootNamespace>openmsx</RootNamespace>
     <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup>
@@ -467,12 +468,13 @@
     <ClCompile Include="$(OpenMSXSrcDir)\input\Trackball.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\input\UnicodeKeymap.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\input\Touchpad.cc" />
-    <ClCompile Include="$(OpenMSXSrcDir)\input\ColecoJoystickIO.cc" />	
+    <ClCompile Include="$(OpenMSXSrcDir)\input\ColecoJoystickIO.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\memory\RomSuperSwangi.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\memory\AmdFlash.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\memory\EEPROM_93C46.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\memory\Carnivore2.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\memory\CheckedRam.cc" />
+    <ClCompile Include="$(OpenMSXSrcDir)\memory\ColecoSuperGameModule.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\memory\TrackedRam.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\memory\ESE_RAM.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\memory\ESE_SCC.cc" />
@@ -497,6 +499,7 @@
     <ClCompile Include="$(OpenMSXSrcDir)\memory\RomAscii8_8.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\memory\RomAscii8kB.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\memory\RomBlocks.cc" />
+    <ClCompile Include="$(OpenMSXSrcDir)\memory\RomColecoMegaCart.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\memory\RomCrossBlaim.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\memory\RomDatabase.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\memory\RomDRAM.cc" />
@@ -624,7 +627,7 @@
     <ClCompile Include="$(OpenMSXSrcDir)\utils\win32-windowhandle.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\utils\sha1.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\utils\StringOp.cc" />
-    <ClCompile Include="$(OpenMSXSrcDir)\utils\string_ref.cc" />
+    <ClCompile Include="$(OpenMSXSrcDir)\utils\string_view.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\utils\rapidsax.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\utils\uint128.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\utils\utf8_checked.cc" />
@@ -782,7 +785,6 @@
     <ClCompile Include="$(OpenMSXSrcDir)\MSXDeviceSwitch.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\MSXE6Timer.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\MSXHiResTimer.cc" />
-    <ClCompile Include="$(OpenMSXSrcDir)\MSXException.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\MSXResetStatusRegister.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\MSXKanji.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\MSXKanji12.cc" />
@@ -1013,12 +1015,13 @@
     <None Include="$(OpenMSXSrcDir)\input\Trackball.hh" />
     <None Include="$(OpenMSXSrcDir)\input\UnicodeKeymap.hh" />
     <None Include="$(OpenMSXSrcDir)\input\Touchpad.hh" />
-    <None Include="$(OpenMSXSrcDir)\input\ColecoJoystickIO.hh" />	
+    <None Include="$(OpenMSXSrcDir)\input\ColecoJoystickIO.hh" />
     <None Include="$(OpenMSXSrcDir)\memory\RomSuperSwangi.hh" />
     <None Include="$(OpenMSXSrcDir)\memory\AmdFlash.hh" />
     <None Include="$(OpenMSXSrcDir)\memory\EEPROM_93C46.hh" />
     <None Include="$(OpenMSXSrcDir)\memory\Carnivore2.hh" />
     <None Include="$(OpenMSXSrcDir)\memory\CheckedRam.hh" />
+    <None Include="$(OpenMSXSrcDir)\memory\ColecoSuperGameModule.hh" />
     <None Include="$(OpenMSXSrcDir)\memory\TrackedRam.hh" />
     <None Include="$(OpenMSXSrcDir)\memory\ESE_RAM.hh" />
     <None Include="$(OpenMSXSrcDir)\memory\ESE_SCC.hh" />
@@ -1043,6 +1046,7 @@
     <None Include="$(OpenMSXSrcDir)\memory\RomAscii8_8.hh" />
     <None Include="$(OpenMSXSrcDir)\memory\RomAscii8kB.hh" />
     <None Include="$(OpenMSXSrcDir)\memory\RomBlocks.hh" />
+    <None Include="$(OpenMSXSrcDir)\memory\RomColecoMegaCart.hh" />
     <None Include="$(OpenMSXSrcDir)\memory\RomCrossBlaim.hh" />
     <None Include="$(OpenMSXSrcDir)\memory\RomDatabase.hh" />
     <None Include="$(OpenMSXSrcDir)\memory\RomDRAM.hh" />
@@ -1201,7 +1205,8 @@
     <None Include="$(OpenMSXSrcDir)\utils\statp.hh" />
     <None Include="$(OpenMSXSrcDir)\utils\StringOp.hh" />
     <None Include="$(OpenMSXSrcDir)\utils\stringsp.hh" />
-    <None Include="$(OpenMSXSrcDir)\utils\string_ref.hh" />
+    <None Include="$(OpenMSXSrcDir)\utils\string_view.hh" />
+    <None Include="$(OpenMSXSrcDir)\utils\strCat.hh" />
     <None Include="$(OpenMSXSrcDir)\utils\rapidsax.hh" />
     <None Include="$(OpenMSXSrcDir)\utils\Subject.hh" />
     <None Include="$(OpenMSXSrcDir)\utils\tuple.hh" />

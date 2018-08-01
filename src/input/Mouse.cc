@@ -27,7 +27,7 @@ static const int STROBE = 0x04;
 class MouseState final : public StateChange
 {
 public:
-	MouseState() {} // for serialize
+	MouseState() = default; // for serialize
 	MouseState(EmuTime::param time_, int deltaX_, int deltaY_,
 	           byte press_, byte release_)
 		: StateChange(time_)
@@ -80,7 +80,7 @@ const string& Mouse::getName() const
 	return name;
 }
 
-string_ref Mouse::getDescription() const
+string_view Mouse::getDescription() const
 {
 	return "MSX mouse";
 }

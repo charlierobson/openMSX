@@ -85,7 +85,7 @@ void AviRecorder::start(bool recordAudio, bool recordVideo, bool recordMono,
 				filename, frameWidth, frameHeight, bpp,
 				(recordAudio && stereo) ? 2 : 1, sampleRate);
 		} catch (MSXException& e) {
-			throw CommandException("Can't start recording: " +
+			throw CommandException("Can't start recording: ",
 			                       e.getMessage());
 		}
 	} else {
@@ -202,7 +202,7 @@ void AviRecorder::processStart(array_ref<TclObject> tokens, TclObject& result)
 
 	vector<string> arguments;
 	for (unsigned i = 2; i < tokens.size(); ++i) {
-		string_ref token = tokens[i].getString();
+		string_view token = tokens[i].getString();
 		if (token.starts_with('-')) {
 			if (token == "--") {
 				for (auto it = std::begin(tokens) + i + 1;
@@ -231,7 +231,7 @@ void AviRecorder::processStart(array_ref<TclObject> tokens, TclObject& result)
 				frameWidth = 960;
 				frameHeight = 720;
 			} else {
-				throw CommandException("Invalid option: " + token);
+				throw CommandException("Invalid option: ", token);
 			}
 		} else {
 			arguments.push_back(token.str());
@@ -316,7 +316,7 @@ void AviRecorder::Cmd::execute(array_ref<TclObject> tokens, TclObject& result)
 		throw CommandException("Missing argument");
 	}
 	auto& recorder = OUTER(AviRecorder, recordCommand);
-	const string_ref subcommand = tokens[1].getString();
+	const string_view subcommand = tokens[1].getString();
 	if (subcommand == "start") {
 		recorder.processStart(tokens, result);
 	} else if (subcommand == "stop") {

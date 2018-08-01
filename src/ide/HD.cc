@@ -137,8 +137,8 @@ void HD::showProgress(size_t position, size_t maxPosition)
 		lastProgressTime = now;
 		int percentage = int((100 * position) / maxPosition);
 		motherBoard.getMSXCliComm().printProgress(
-			"Calculating hash for " + filename.getResolved() +
-			"... " + StringOp::toString(percentage) + '%');
+			"Calculating hash for ", filename.getResolved(),
+			"... ", percentage, '%');
 		motherBoard.getReactor().getDisplay().repaint();
 		everDidProgress = true;
 	}
@@ -196,7 +196,7 @@ bool HD::diskChanged()
 	return false; // TODO not implemented
 }
 
-int HD::insertDisk(string_ref newDisk)
+int HD::insertDisk(string_view newDisk)
 {
 	try {
 		switchImage(Filename(newDisk.str()));
@@ -274,12 +274,12 @@ void HD::serialize(Archive& ar, unsigned version)
 
 		if (ar.isLoader() && mismatch) {
 			motherBoard.getMSXCliComm().printWarning(
-			    "The content of the harddisk " +
-			    tmp.getResolved() +
-			    " has changed since the time this savestate was "
-			    "created. This might result in emulation problems "
-			    "or even diskcorruption. To prevent the latter, "
-			    "the harddisk is now write-protected.");
+				"The content of the harddisk ",
+				tmp.getResolved(),
+				" has changed since the time this savestate was "
+				"created. This might result in emulation problems "
+				"or even diskcorruption. To prevent the latter, "
+				"the harddisk is now write-protected.");
 			forceWriteProtect();
 		}
 	}

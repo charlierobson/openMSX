@@ -233,8 +233,8 @@ static inline void convertHelperSSE2(
 		const uint8_t* pY2 = buffer[0].data + (y + 1) * y_stride;
 		const uint8_t* pCb = buffer[1].data + y * uv_stride2;
 		const uint8_t* pCr = buffer[2].data + y * uv_stride2;
-		uint32_t* out0 = output.getLinePtrDirect<uint32_t>(y + 0);
-		uint32_t* out1 = output.getLinePtrDirect<uint32_t>(y + 1);
+		auto* out0 = output.getLinePtrDirect<uint32_t>(y + 0);
+		auto* out1 = output.getLinePtrDirect<uint32_t>(y + 1);
 
 		for (int x = 0; x < width; x += 32) {
 			// convert a block of (32 x 2) pixels
@@ -255,9 +255,9 @@ static inline void convertHelperSSE2(
 #endif // __SSE2__
 
 static constexpr int PREC = 15;
-static constexpr int COEF_Y  = int(1.164 * (1 << PREC) + 0.5);
-static constexpr int COEF_RV = int(1.596 * (1 << PREC) + 0.5);
-static constexpr int COEF_GU = int(0.391 * (1 << PREC) + 0.5);
+static constexpr int COEF_Y  = int(1.164 * (1 << PREC) + 0.5); // prefer to use lrint() to round
+static constexpr int COEF_RV = int(1.596 * (1 << PREC) + 0.5); // but that's not (yet) constexpr
+static constexpr int COEF_GU = int(0.391 * (1 << PREC) + 0.5); // in current versions of c++
 static constexpr int COEF_GV = int(0.813 * (1 << PREC) + 0.5);
 static constexpr int COEF_BU = int(2.018 * (1 << PREC) + 0.5);
 
@@ -313,8 +313,8 @@ static void convertHelper(const th_ycbcr_buffer& buffer, RawFrame& output,
 		const uint8_t* pY  = buffer[0].data + y * y_stride;
 		const uint8_t* pCb = buffer[1].data + y * uv_stride2;
 		const uint8_t* pCr = buffer[2].data + y * uv_stride2;
-		Pixel* out0 = output.getLinePtrDirect<Pixel>(y + 0);
-		Pixel* out1 = output.getLinePtrDirect<Pixel>(y + 1);
+		auto* out0 = output.getLinePtrDirect<Pixel>(y + 0);
+		auto* out1 = output.getLinePtrDirect<Pixel>(y + 1);
 
 		for (int x = 0; x < width;
 		     x += 2, pY += 2, ++pCr, ++pCb, out0 += 2, out1 += 2) {

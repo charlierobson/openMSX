@@ -5,8 +5,8 @@
 #include "SerializeBuffer.hh"
 #include "XMLElement.hh"
 #include "MemBuffer.hh"
-#include "StringOp.hh"
 #include "inline.hh"
+#include "strCat.hh"
 #include "unreachable.hh"
 #include <zlib.h>
 #include <string>
@@ -689,7 +689,7 @@ public:
 		load(c);
 	}
 	void load(std::string& s);
-	string_ref loadStr();
+	string_view loadStr();
 	void serialize_blob(const char*, void* data, size_t len,
 	                    bool diff = true);
 
@@ -726,7 +726,7 @@ public:
 	{
 		// TODO make sure floating point is printed with enough digits
 		//      maybe print as hex?
-		save(StringOp::toString(t));
+		save(strCat(t));
 	}
 	template <typename T> void save(const T& t)
 	{
@@ -755,7 +755,7 @@ public:
 
 	template<typename T> void attributeImpl(const char* name, const T& t)
 	{
-		attribute(name, StringOp::toString(t));
+		attribute(name, strCat(t));
 	}
 	template<typename T> void attribute(const char* name, const T& t)
 	{
@@ -801,7 +801,7 @@ public:
 	void load(unsigned& u);             // but having them non-inline
 	void load(unsigned long long& ull); // saves quite a bit of code
 	void load(std::string& t);
-	string_ref loadStr();
+	string_view loadStr();
 
 	void skipSection(bool /*skip*/) { /*nothing*/ }
 

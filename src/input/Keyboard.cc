@@ -33,12 +33,12 @@ using std::make_shared;
 
 namespace openmsx {
 
-typedef UnicodeKeymap::KeyInfo KeyInfo;
+using KeyInfo = UnicodeKeymap::KeyInfo;
 
 class KeyMatrixState final : public StateChange
 {
 public:
-	KeyMatrixState() {} // for serialize
+	KeyMatrixState() = default; // for serialize
 	KeyMatrixState(EmuTime::param time_, byte row_, byte press_, byte release_)
 		: StateChange(time_)
 		, row(row_), press(press_), release(release_)
@@ -1041,9 +1041,9 @@ void Keyboard::KeyInserter::execute(
 		return;
 	}
 
-        vector<string_ref> arguments;
+        vector<string_view> arguments;
 	for (unsigned i = 1; i < tokens.size(); ++i) {
-		string_ref t = tokens[i].getString();
+		string_view t = tokens[i].getString();
 		if (t == "-release") {
 			releaseBeforePress = true;
 		} else if (t == "-freq") {
@@ -1085,7 +1085,7 @@ void Keyboard::KeyInserter::tabCompletion(vector<string>& tokens) const
 	completeString(tokens, options);
 }
 
-void Keyboard::KeyInserter::type(string_ref str)
+void Keyboard::KeyInserter::type(string_view str)
 {
 	if (str.empty()) {
 		return;

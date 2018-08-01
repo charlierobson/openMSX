@@ -34,7 +34,7 @@ unique_ptr<DiskChanger> NowindCommand::createDiskChanger(
 {
 	return make_unique<DiskChanger>(
 			motherBoard,
-			StringOp::Builder() << basename << n + 1,
+			strCat(basename, n + 1),
 			false, true);
 }
 
@@ -49,7 +49,7 @@ unsigned NowindCommand::searchRomdisk(const NowindHost::Drives& drives) const
 }
 
 void NowindCommand::processHdimage(
-	string_ref hdimage, NowindHost::Drives& drives) const
+	string_view hdimage, NowindHost::Drives& drives) const
 {
 	MSXMotherBoard& motherboard = interface.getMotherBoard();
 
@@ -103,26 +103,26 @@ void NowindCommand::execute(array_ref<TclObject> tokens, TclObject& result)
 	if (tokens.size() == 1) {
 		// no arguments, show general status
 		assert(!drives.empty());
-		StringOp::Builder r;
+		string r;
 		for (unsigned i = 0; i < drives.size(); ++i) {
-			r << "nowind" << i + 1 << ": ";
+			strAppend(r, "nowind", i + 1, ": ");
 			if (dynamic_cast<NowindRomDisk*>(drives[i].get())) {
-				r << "romdisk\n";
+				strAppend(r, "romdisk\n");
 			} else if (auto changer = dynamic_cast<DiskChanger*>(
 						drives[i].get())) {
 				string filename = changer->getDiskName().getOriginal();
-				r << (filename.empty() ? "--empty--" : filename)
-				  << '\n';
+				strAppend(r, (filename.empty() ? "--empty--" : filename),
+				          '\n');
 			} else {
 				UNREACHABLE;
 			}
 		}
-		r << "phantom drives: "
-		  << (host.getEnablePhantomDrives() ? "enabled" : "disabled")
-		  << '\n';
-		r << "allow other diskroms: "
-		  << (host.getAllowOtherDiskroms() ? "yes" : "no")
-		  << '\n';
+		strAppend(r, "phantom drives: ",
+		          (host.getEnablePhantomDrives() ? "enabled" : "disabled"),
+		          "\n"
+		          "allow other diskroms: ",
+		          (host.getAllowOtherDiskroms() ? "yes" : "no"),
+		          '\n');
 		result.setString(r);
 		return;
 	}
@@ -141,9 +141,9 @@ void NowindCommand::execute(array_ref<TclObject> tokens, TclObject& result)
 	array_ref<TclObject> args(&tokens[1], tokens.size() - 1);
 	while (error.empty() && !args.empty()) {
 		bool createDrive = false;
-		string_ref image;
+		string_view image;
 
-		string_ref arg = args.front().getString();
+		string_view arg = args.front().getString();
 		args.pop_front();
 		if        ((arg == "--ctrl")    || (arg == "-c")) {
 			enablePhantom  = false;
@@ -169,7 +169,7 @@ void NowindCommand::execute(array_ref<TclObject> tokens, TclObject& result)
 
 		} else if ((arg == "--image") || (arg == "-i")) {
 			if (args.empty()) {
-				error = "Missing argument for option: " + arg;
+				error = strCat("Missing argument for option: ", arg);
 			} else {
 				image = args.front().getString();
 				args.pop_front();
@@ -178,10 +178,10 @@ void NowindCommand::execute(array_ref<TclObject> tokens, TclObject& result)
 
 		} else if ((arg == "--hdimage") || (arg == "-m")) {
 			if (args.empty()) {
-				error = "Missing argument for option: " + arg;
+				error = strCat("Missing argument for option: ", arg);
 			} else {
 				try {
-					string_ref hdimage = args.front().getString();
+					string_view hdimage = args.front().getString();
 					args.pop_front();
 					processHdimage(hdimage, tmpDrives);
 					changeDrives = true;
@@ -203,7 +203,7 @@ void NowindCommand::execute(array_ref<TclObject> tokens, TclObject& result)
 			changeDrives = true;
 			if (!image.empty()) {
 				if (drive->insertDisk(image)) {
-					error = "Invalid disk image: " + image;
+					error = strCat("Invalid disk image: ", image);
 				}
 			}
 			tmpDrives.push_back(std::move(drive));

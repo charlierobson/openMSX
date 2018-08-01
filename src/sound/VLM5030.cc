@@ -81,6 +81,7 @@ chirp 12-..: vokume   0   : silent
 #include "Math.hh"
 #include "serialize.hh"
 #include "random.hh"
+#include <cmath>
 #include <cstring>
 #include <cstdint>
 
@@ -514,7 +515,7 @@ static XMLElement getRomConfig(const std::string& name, const std::string& romFi
 	romElement.addChild( // load by sha1sum
 		"sha1", "4f36d139ee4baa7d5980f765de9895570ee05f40");
 	romElement.addChild( // load by predefined filename in software rom's dir
-		"filename", FileOperations::stripExtension(romFilename) + "_voice.rom");
+		"filename", strCat(FileOperations::stripExtension(romFilename), "_voice.rom"));
 	romElement.addChild( // or hardcoded filename in ditto dir
 		"filename", "keyboardmaster/voice.rom");
 	return voiceROMconfig;
@@ -536,7 +537,7 @@ VLM5030::VLM5030(const std::string& name_, const std::string& desc,
 
 	const int CLOCK_FREQ = 3579545;
 	float input = CLOCK_FREQ / 440.0f;
-	setInputRate(int(input + 0.5f));
+	setInputRate(lrintf(input));
 
 	registerSound(config);
 }

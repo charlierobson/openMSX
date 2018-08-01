@@ -16,6 +16,7 @@
 #include "xrange.hh"
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <cstdint>
 #include <cstddef>
 #ifdef __SSE2__
@@ -215,7 +216,7 @@ void FBPostProcessor<Pixel>::drawNoise(OutputSurface& output)
 	unsigned w = output.getWidth();
 	output.lock();
 	for (unsigned y = 0; y < h; ++y) {
-		Pixel* buf = output.getLinePtrDirect<Pixel>(y);
+		auto* buf = output.getLinePtrDirect<Pixel>(y);
 		drawNoiseLine(buf, &noiseBuf[noiseShift[y]], w);
 	}
 }
@@ -312,7 +313,7 @@ void FBPostProcessor<Pixel>::paint(OutputSurface& output)
 		//	srcStartY, srcEndY, lineWidth );
 		output.lock();
 		float horStretch = renderSettings.getHorizontalStretch();
-		unsigned inWidth = unsigned(horStretch + 0.5f);
+		unsigned inWidth = lrintf(horStretch);
 		std::unique_ptr<ScalerOutput<Pixel>> dst(
 			StretchScalerOutputFactory<Pixel>::create(
 				output, pixelOps, inWidth));

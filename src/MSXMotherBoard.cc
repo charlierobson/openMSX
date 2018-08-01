@@ -38,7 +38,6 @@
 #include "FileException.hh"
 #include "TclObject.hh"
 #include "Observer.hh"
-#include "StringOp.hh"
 #include "serialize.hh"
 #include "serialize_stl.hh"
 #include "ScopedAssign.hh"
@@ -174,7 +173,7 @@ static unsigned machineIDCounter = 0;
 
 MSXMotherBoard::MSXMotherBoard(Reactor& reactor_)
 	: reactor(reactor_)
-	, machineID(StringOp::Builder() << "machine" << ++machineIDCounter)
+	, machineID(strCat("machine", ++machineIDCounter))
 	, mapperIOCounter(0)
 	, machineConfig(nullptr)
 	, msxCliComm(make_unique<MSXCliComm>(*this, reactor.getGlobalCliComm()))
@@ -295,17 +294,17 @@ string MSXMotherBoard::loadMachine(const string& machine)
 		machineConfig2 = HardwareConfig::createMachineConfig(*this, machine);
 		setMachineConfig(machineConfig2.get());
 	} catch (FileException& e) {
-		throw MSXException("Machine \"" + machine + "\" not found: " +
+		throw MSXException("Machine \"", machine, "\" not found: ",
 		                   e.getMessage());
 	} catch (MSXException& e) {
-		throw MSXException("Error in \"" + machine + "\" machine: " +
+		throw MSXException("Error in \"", machine, "\" machine: ",
 		                   e.getMessage());
 	}
 	try {
 		machineConfig->parseSlots();
 		machineConfig->createDevices();
 	} catch (MSXException& e) {
-		throw MSXException("Error in \"" + machine + "\" machine: " +
+		throw MSXException("Error in \"", machine, "\" machine: ",
 		                   e.getMessage());
 	}
 	if (powerSetting.getBoolean()) {
@@ -315,30 +314,30 @@ string MSXMotherBoard::loadMachine(const string& machine)
 	return machineName;
 }
 
-string MSXMotherBoard::loadExtension(string_ref name, string_ref slotname)
+string MSXMotherBoard::loadExtension(string_view name, string_view slotname)
 {
 	unique_ptr<HardwareConfig> extension;
 	try {
 		extension = HardwareConfig::createExtensionConfig(*this, name, slotname);
 	} catch (FileException& e) {
 		throw MSXException(
-			"Extension \"" + name + "\" not found: " + e.getMessage());
+			"Extension \"", name, "\" not found: ", e.getMessage());
 	} catch (MSXException& e) {
 		throw MSXException(
-			"Error in \"" + name + "\" extension: " + e.getMessage());
+			"Error in \"", name, "\" extension: ", e.getMessage());
 	}
 	return insertExtension(name, std::move(extension));
 }
 
 string MSXMotherBoard::insertExtension(
-	string_ref name, unique_ptr<HardwareConfig> extension)
+	string_view name, unique_ptr<HardwareConfig> extension)
 {
 	try {
 		extension->parseSlots();
 		extension->createDevices();
 	} catch (MSXException& e) {
 		throw MSXException(
-			"Error in \"" + name + "\" extension: " + e.getMessage());
+			"Error in \"", name, "\" extension: ", e.getMessage());
 	}
 	string result = extension->getName();
 	extensions.push_back(std::move(extension));
@@ -346,7 +345,7 @@ string MSXMotherBoard::insertExtension(
 	return result;
 }
 
-HardwareConfig* MSXMotherBoard::findExtension(string_ref extensionName)
+HardwareConfig* MSXMotherBoard::findExtension(string_view extensionName)
 {
 	auto it = std::find_if(begin(extensions), end(extensions),
 		[&](Extensions::value_type& v) {
@@ -425,7 +424,7 @@ JoystickPortIf& MSXMotherBoard::getJoystickPort(unsigned port)
 	if (!joystickPort[0]) {
 		assert(getMachineConfig());
 		// some MSX machines only have 1 instead of 2 joystick ports
-		string_ref ports = getMachineConfig()->getConfig().getChildData(
+		string_view ports = getMachineConfig()->getConfig().getChildData(
 			"JoystickPorts", "AB");
 		if ((ports != "AB") && (!ports.empty()) &&
 		    (ports != "A") && (ports != "B")) {
@@ -643,7 +642,7 @@ void MSXMotherBoard::exitCPULoopSync()
 	getCPU().exitCPULoopSync();
 }
 
-MSXDevice* MSXMotherBoard::findDevice(string_ref name)
+MSXDevice* MSXMotherBoard::findDevice(string_view name)
 {
 	for (auto& d : availableDevices) {
 		if (d->getName() == name) {
@@ -698,7 +697,7 @@ string MSXMotherBoard::getUserName(const string& hwName)
 	unsigned n = 0;
 	string userName;
 	do {
-		userName = StringOp::Builder() << "untitled" << ++n;
+		userName = strCat("untitled", ++n);
 	} while (find(begin(s), end(s), userName) != end(s));
 	s.push_back(userName);
 	return userName;
@@ -824,13 +823,13 @@ string ListExtCmd::help(const vector<string>& /*tokens*/) const
 
 
 // ExtCmd
-ExtCmd::ExtCmd(MSXMotherBoard& motherBoard_, string_ref commandName_)
+ExtCmd::ExtCmd(MSXMotherBoard& motherBoard_, std::string commandName_)
 	: RecordedCommand(motherBoard_.getCommandController(),
 	                  motherBoard_.getStateChangeDistributor(),
 	                  motherBoard_.getScheduler(),
 	                  commandName_)
 	, motherBoard(motherBoard_)
-	, commandName(commandName_.str())
+	, commandName(std::move(commandName))
 {
 }
 
@@ -842,7 +841,7 @@ void ExtCmd::execute(array_ref<TclObject> tokens, TclObject& result,
 	}
 	try {
 		auto slotname = (commandName.size() == 4)
-			? string(1, commandName[3])
+			? string_view(&commandName[3], 1)
 			: "any";
 		result.setString(motherBoard.loadExtension(
 			tokens[1].getString(), slotname));
@@ -879,16 +878,16 @@ void RemoveExtCmd::execute(array_ref<TclObject> tokens, TclObject& /*result*/,
 	if (tokens.size() != 2) {
 		throw SyntaxError();
 	}
-	string_ref extName = tokens[1].getString();
+	string_view extName = tokens[1].getString();
 	HardwareConfig* extension = motherBoard.findExtension(extName);
 	if (!extension) {
-		throw CommandException("No such extension: " + extName);
+		throw CommandException("No such extension: ", extName);
 	}
 	try {
 		motherBoard.removeExtension(*extension);
 	} catch (MSXException& e) {
-		throw CommandException("Can't remove extension '" + extName +
-		                       "': " + e.getMessage());
+		throw CommandException("Can't remove extension '", extName,
+		                       "': ", e.getMessage());
 	}
 }
 
@@ -900,7 +899,7 @@ string RemoveExtCmd::help(const vector<string>& /*tokens*/) const
 void RemoveExtCmd::tabCompletion(vector<string>& tokens) const
 {
 	if (tokens.size() == 2) {
-		vector<string_ref> names;
+		vector<string_view> names;
 		for (auto& e : motherBoard.getExtensions()) {
 			names.emplace_back(e->getName());
 		}
@@ -965,10 +964,10 @@ void DeviceInfo::execute(array_ref<TclObject> tokens, TclObject& result) const
 		}
 		break;
 	case 3: {
-		string_ref deviceName = tokens[2].getString();
+		string_view deviceName = tokens[2].getString();
 		MSXDevice* device = motherBoard.findDevice(deviceName);
 		if (!device) {
-			throw CommandException("No such device: " + deviceName);
+			throw CommandException("No such device: ", deviceName);
 		}
 		device->getDeviceInfo(result);
 		break;

@@ -555,6 +555,9 @@
     <ClCompile Include="$(OpenMSXSrcDir)\memory\CheckedRam.cc">
       <Filter>memory</Filter>
     </ClCompile>
+    <ClCompile Include="$(OpenMSXSrcDir)\memory\ColecoSuperGameModule.cc">
+      <Filter>memory</Filter>
+    </ClCompile>
     <ClCompile Include="$(OpenMSXSrcDir)\memory\ESE_RAM.cc">
       <Filter>memory</Filter>
     </ClCompile>
@@ -622,6 +625,9 @@
       <Filter>memory</Filter>
     </ClCompile>
     <ClCompile Include="$(OpenMSXSrcDir)\memory\RomBlocks.cc">
+      <Filter>memory</Filter>
+    </ClCompile>
+    <ClCompile Include="$(OpenMSXSrcDir)\memory\RomColecoMegaCart.cc">
       <Filter>memory</Filter>
     </ClCompile>
     <ClCompile Include="$(OpenMSXSrcDir)\memory\RomCrossBlaim.cc">
@@ -1265,7 +1271,6 @@
     <ClCompile Include="$(OpenMSXSrcDir)\MSXDeviceSwitch.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\MSXE6Timer.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\MSXHiResTimer.cc" />
-    <ClCompile Include="$(OpenMSXSrcDir)\MSXException.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\MSXResetStatusRegister.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\MSXKanji.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\MSXKanji12.cc" />
@@ -1319,7 +1324,7 @@
     <ClCompile Include="$(OpenMSXSrcDir)\input\JoyMega.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\memory\RomDooly.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\sound\ResampledSoundDevice.cc" />
-    <ClCompile Include="$(OpenMSXSrcDir)\utils\string_ref.cc" />
+    <ClCompile Include="$(OpenMSXSrcDir)\utils\string_view.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\utils\rapidsax.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\video\scalers\GLHQLiteScaler.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\video\scalers\GLHQScaler.cc" />
@@ -1378,6 +1383,7 @@
     <ClCompile Include="$(OpenMSXSrcDir)\video\GLContext.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\sound\SVIPSG.cc" />
     <ClCompile Include="$(OpenMSXSrcDir)\fdc\SVIFDC.cc" />
+    <ClCompile Include="$(OpenMSXSrcDir)\input\ColecoJoystickIO.cc" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(OpenMSXSrcDir)\cassette\CasImage.hh">
@@ -1909,6 +1915,9 @@
       <Filter>memory</Filter>
     </None>
     <None Include="$(OpenMSXSrcDir)\memory\CheckedRam.hh">
+      <Filter>memory</Filter>
+    </None>
+    <None Include="$(OpenMSXSrcDir)\memory\ColecoSuperGameModule.hh">
       <Filter>memory</Filter>
     </None>
     <None Include="$(OpenMSXSrcDir)\memory\ESE_RAM.hh">
@@ -2819,7 +2828,8 @@
     <None Include="$(OpenMSXSrcDir)\sound\ResampledSoundDevice.hh" />
     <None Include="$(OpenMSXSrcDir)\utils\hash_map.hh" />
     <None Include="$(OpenMSXSrcDir)\utils\hash_set.hh" />
-    <None Include="$(OpenMSXSrcDir)\utils\string_ref.hh" />
+    <None Include="$(OpenMSXSrcDir)\utils\string_view.hh" />
+    <None Include="$(OpenMSXSrcDir)\utils\strCat.hh" />
     <None Include="$(OpenMSXSrcDir)\utils\rapidsax.hh" />
     <None Include="$(OpenMSXSrcDir)\video\scalers\GLHQLiteScaler.hh" />
     <None Include="$(OpenMSXSrcDir)\video\scalers\GLHQScaler.hh" />
@@ -2886,6 +2896,8 @@
     <None Include="$(OpenMSXSrcDir)\video\scalers\GLDefaultScaler.hh" />
     <None Include="$(OpenMSXSrcDir)\video\SuperImposedFrame.hh" />
     <None Include="$(OpenMSXSrcDir)\fdc\SpectravideoFDC.hh" />
+    <None Include="$(OpenMSXSrcDir)\video\SuperImposedFrame.hh" />
+    <None Include="$(OpenMSXSrcDir)\input\ColecoJoystickIO.hh" />
     <None Include="$(OpenMSXSrcDir)\video\SuperImposedFrame.hh" />
   </ItemGroup>
   <ItemGroup>

@@ -1,7 +1,6 @@
 #include "CliServer.hh"
 #include "GlobalCliComm.hh"
 #include "CliConnection.hh"
-#include "StringOp.hh"
 #include "FileOperations.hh"
 #include "MSXException.hh"
 #include "memory.hh"
@@ -60,7 +59,7 @@ static bool checkSocketDir(const string& dir)
 
 static bool checkSocket(const string& socket)
 {
-	string_ref name = FileOperations::getFilename(socket);
+	string_view name = FileOperations::getFilename(socket);
 	if (!name.starts_with("socket.")) {
 		return false; // wrong name
 	}
@@ -123,12 +122,12 @@ static int openPort(SOCKET listenSock)
 
 SOCKET CliServer::createSocket()
 {
-	string dir = FileOperations::getTempDir() + "/openmsx-" + getUserName();
+	string dir = strCat(FileOperations::getTempDir(), "/openmsx-", getUserName());
 	FileOperations::mkdir(dir, 0700);
 	if (!checkSocketDir(dir)) {
 		throw MSXException("Couldn't create socket directory.");
 	}
-	socketName = StringOp::Builder() << dir << "/socket." << int(getpid());
+	socketName = strCat(dir, "/socket.", int(getpid()));
 
 #ifdef _WIN32
 	SOCKET sd = socket(AF_INET, SOCK_STREAM, 0);
@@ -156,8 +155,10 @@ SOCKET CliServer::createSocket()
 	FileOperations::unlink(socketName); // ignore error
 
 	sockaddr_un addr;
-	strcpy(addr.sun_path, socketName.c_str());
+	strncpy(addr.sun_path, socketName.c_str(), sizeof(addr.sun_path) - 1);
+	addr.sun_path[sizeof(addr.sun_path) - 1] = '\0';
 	addr.sun_family = AF_UNIX;
+
 	if (bind(sd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == -1) {
 		sock_close(sd);
 		throw MSXException("Couldn't bind socket.");
@@ -174,7 +175,7 @@ SOCKET CliServer::createSocket()
 	}
 	if (listen(sd, SOMAXCONN) == SOCKET_ERROR) {
 		sock_close(sd);
-		throw MSXException("Couldn't listen to socket: " + sock_error());
+		throw MSXException("Couldn't listen to socket: ", sock_error());
 	}
 	return sd;
 }

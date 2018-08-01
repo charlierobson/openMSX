@@ -14,7 +14,6 @@
 #include "Filename.hh"
 #include "CliComm.hh"
 #include "Math.hh"
-#include "StringOp.hh"
 #include "memory.hh"
 #include "stl.hh"
 #include "aligned.hh"
@@ -97,12 +96,12 @@ void MSXMixer::registerSound(SoundDevice& device, float volume,
 
 	for (unsigned i = 0; i < numChannels; ++i) {
 		SoundDeviceInfo::ChannelSettings channelSettings;
-		string ch_name = StringOp::Builder() << name << "_ch" << i + 1;
+		string ch_name = strCat(name, "_ch", i + 1);
 
 		channelSettings.recordSetting = make_unique<StringSetting>(
 			commandController, ch_name + "_record",
 			"filename to record this channel to",
-			string_ref{}, Setting::DONT_SAVE);
+			string_view{}, Setting::DONT_SAVE);
 		channelSettings.recordSetting->attach(*this);
 
 		channelSettings.muteSetting = make_unique<BooleanSetting>(
@@ -755,11 +754,13 @@ void MSXMixer::updateVolumeParams(SoundDeviceInfo& info)
 	// 512 (9 bits) because in the DC filter we also have a factor 512, and
 	// using the same allows to fold both (later) divisions into one.
 	static_assert((1 << AMP_BITS) == 512, "");
-	int amp = info.device->getAmplificationFactor().getRawValue();
-	info.left1  = int(l1 * amp);
-	info.right1 = int(r1 * amp);
-	info.left2  = int(l2 * amp);
-	info.right2 = int(r2 * amp);
+	auto amp = info.device->getAmplificationFactor();
+	auto ampL = amp.first .getRawValue();
+	auto ampR = amp.second.getRawValue();
+	info.left1  = lrintf(l1 * ampL);
+	info.right1 = lrintf(r1 * ampR);
+	info.left2  = lrintf(l2 * ampL);
+	info.right2 = lrintf(r2 * ampR);
 }
 
 void MSXMixer::updateMasterVolume()
@@ -794,7 +795,7 @@ void MSXMixer::executeUntil(EmuTime::param time)
 
 // Sound device info
 
-SoundDevice* MSXMixer::findDevice(string_ref name) const
+SoundDevice* MSXMixer::findDevice(string_view name) const
 {
 	auto it = find_if(begin(infos), end(infos),
 		[&](const SoundDeviceInfo& i) {
@@ -839,7 +840,7 @@ string MSXMixer::SoundDeviceInfoTopic::help(const vector<string>& /*tokens*/) co
 void MSXMixer::SoundDeviceInfoTopic::tabCompletion(vector<string>& tokens) const
 {
 	if (tokens.size() == 3) {
-		vector<string_ref> devices;
+		vector<string_view> devices;
 		auto& msxMixer = OUTER(MSXMixer, soundDeviceInfo);
 		for (auto& info : msxMixer.infos) {
 			devices.emplace_back(info.device->getName());
